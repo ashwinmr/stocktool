@@ -43,6 +43,9 @@ TICKERS = [
 'SNAP',
 'QCOM',
 'BYND',
+'DIS',
+'FIT',
+'GPRO',
 ]
 
 def download_data(start = dt.datetime(2000,1,1), end = dt.datetime(2019,12,26), tickers = TICKERS, force = False):
@@ -115,7 +118,7 @@ def create_value_legend(tickers,values):
 if __name__ == "__main__":
 
     # Set start and end
-    start = dt.datetime(2019,1,1)
+    start = dt.datetime(2018,1,1)
     end = dt.datetime(2019,12,26)
 
     # Download data
