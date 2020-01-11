@@ -1,3 +1,4 @@
+import argparse
 import datetime as dt
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -47,6 +48,17 @@ TICKERS = [
 'FIT',
 'GPRO',
 ]
+
+def parse_args():
+  """ Parse arguments for program
+  """
+  parser = argparse.ArgumentParser(description="Program for analyzing stock")
+  subparsers = parser.add_subparsers(dest='sub_cmd',required=True)
+
+  plot_parser = subparsers.add_parser('plot', help='plot the stock data')
+  plot_parser.set_defaults(func=plot_data)
+
+  return parser.parse_args()
 
 def download_data(start = dt.datetime(2000,1,1), end = dt.datetime(2019,12,26), tickers = TICKERS, force = False):
     """ Download data from yahoo for provided tickers
@@ -114,9 +126,7 @@ def create_value_legend(tickers,values):
 
     return leg
 
-
-if __name__ == "__main__":
-
+def plot_data():
     # Set start and end
     start = dt.datetime(2018,1,1)
     end = dt.datetime(2019,12,26)
@@ -150,3 +160,7 @@ if __name__ == "__main__":
     plt.legend(leg)
 
     plt.show()
+
+if __name__ == "__main__":
+    args = parse_args()
+    args.func()
