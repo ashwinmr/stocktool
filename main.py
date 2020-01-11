@@ -62,7 +62,7 @@ def parse_args():
 
   return parser.parse_args()
 
-def download_data(start = dt.datetime(2000,1,1), end = dt.datetime(2019,12,26), tickers = TICKERS, force = False):
+def download_data(start = dt.datetime(2000,1,1), end = dt.datetime.now(), tickers = TICKERS, force = False):
     """ Download data from yahoo for provided tickers
     """
     if not os.path.exists('stock_dfs'):
