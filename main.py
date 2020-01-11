@@ -57,12 +57,52 @@ def parse_args():
 
   plot_parser = subparsers.add_parser('plot', help='plot the stock data')
   plot_parser.add_argument('-s','--start',default='2018/1/1',help="start date in the format YYYY/mm/dd")
-  plot_parser.add_argument('-e','--end',default=dt.datetime.now().strftime("%Y/%m/%d"),help="end date in the format YYYY/mm/dd")
+  plot_parser.add_argument('-e','--end',default=dt.datetime.today().strftime("%Y/%m/%d"),help="end date in the format YYYY/mm/dd")
   plot_parser.set_defaults(func='plot')
+
+  update_parser = subparsers.add_parser('update',help='update the stock data')
+  update_parser.set_defaults(func='update')
+
+  download_parser = subparsers.add_parser('download',help='download the stock data')
+  download_parser.add_argument('-s','--start',default='2000/1/1',help="start date in the format YYYY/mm/dd")
+  download_parser.add_argument('-e','--end',default=dt.datetime.today().strftime("%Y/%m/%d"),help="end date in the format YYYY/mm/dd")
+  download_parser.add_argument('-f','--force',action='store_true',help="force download")
+  download_parser.set_defaults(func='download')
 
   return parser.parse_args()
 
-def download_data(start = dt.datetime(2000,1,1), end = dt.datetime.now(), tickers = TICKERS, force = False):
+def update_data(tickers = TICKERS):
+    """ Update the data to the current date
+    """
+    if not os.path.exists('stock_dfs'):
+        download_data()
+        return
+
+    for ticker in tickers:
+        try:
+            print('Updating {}'.format(ticker))
+
+            # Load old data
+            df_old = pd.read_csv('stock_dfs/{}.csv'.format(ticker),index_col = 'Date',parse_dates = ['Date'])
+
+            # Get last date
+            last_date = df_old.index[-1]
+
+            # Download new data
+            start = last_date + dt.timedelta(days=1)
+            end = dt.datetime.today()
+            df_update = web.DataReader(ticker,'yahoo',start,end)
+
+            # Append
+            df_new = df_old.append(df_update)
+
+            # Save
+            df_new.to_csv('stock_dfs/{}.csv'.format(ticker))
+
+        except Exception as e:
+            print('Failed to update {}:\n\t{}'.format(ticker,e))
+    
+def download_data(start, end, tickers = TICKERS, force = False):
     """ Download data from yahoo for provided tickers
     """
     if not os.path.exists('stock_dfs'):
@@ -111,8 +151,9 @@ def normalize(df_in):
 
     return df
 
-
 def get_timeframe(df,start,end):
+    """ Get timeframe section from df
+    """
 
     # Create mask between time
     mask = (df.index > start) & (df.index < end)
@@ -129,13 +170,9 @@ def create_value_legend(tickers,values):
     return leg
 
 def plot_data(start,end):
-    print(end)
     # Set start and end
     start = dt.datetime.strptime(start,'%Y/%m/%d')
     end = dt.datetime.strptime(end,'%Y/%m/%d')
-
-    # Download data
-    download_data()
 
     # Load the data
     main_df = load_data()
@@ -168,4 +205,8 @@ if __name__ == "__main__":
     args = parse_args()
 
     if args.func == 'plot':
-        plot_data(args.start, args.end)
+        plot_data(start = args.start, end = args.end)
+    if args.func == 'update':
+        update_data()
+    if args.func == 'download':
+        download_data(start = args.start, end = args.end, force = args.force)
