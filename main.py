@@ -74,10 +74,6 @@ def parse_args():
 def update_data(tickers = TICKERS):
     """ Update the data to the current date
     """
-    if not os.path.exists('stock_dfs'):
-        download_data()
-        return
-
     for ticker in tickers:
         try:
             print('Updating {}'.format(ticker))
