@@ -56,7 +56,9 @@ def parse_args():
   subparsers = parser.add_subparsers(dest='sub_cmd',required=True)
 
   plot_parser = subparsers.add_parser('plot', help='plot the stock data')
-  plot_parser.set_defaults(func=plot_data)
+  plot_parser.add_argument('-s','--start',default='2018/1/1',help="start date in the format YYYY/mm/dd")
+  plot_parser.add_argument('-e','--end',default='2019/12/26',help="end date in the format YYYY/mm/dd")
+  plot_parser.set_defaults(func='plot')
 
   return parser.parse_args()
 
@@ -126,10 +128,10 @@ def create_value_legend(tickers,values):
 
     return leg
 
-def plot_data():
+def plot_data(start,end):
     # Set start and end
-    start = dt.datetime(2018,1,1)
-    end = dt.datetime(2019,12,26)
+    start = dt.datetime.strptime(start,'%Y/%m/%d')
+    end = dt.datetime.strptime(end,'%Y/%m/%d')
 
     # Download data
     download_data()
@@ -163,4 +165,6 @@ def plot_data():
 
 if __name__ == "__main__":
     args = parse_args()
-    args.func()
+
+    if args.func == 'plot':
+        plot_data(args.start, args.end)
