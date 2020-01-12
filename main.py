@@ -85,15 +85,19 @@ def update_data(tickers = TICKERS):
             last_date = df_old.index[-1]
 
             # Download new data
-            start = last_date + dt.timedelta(days=1)
+            start = last_date
             end = dt.datetime.today()
-            df_update = web.DataReader(ticker,'yahoo',start,end)
+            df_new = web.DataReader(ticker,'yahoo',start,end)
 
             # Append
-            df_new = df_old.append(df_update)
+            df = df_old.append(df_new)
+
+            # Remove duplicates
+            # Dropping duplicates using index doesn't work
+            df = df.reset_index().drop_duplicates(subset='Date').set_index('Date')
 
             # Save
-            df_new.to_csv('stock_dfs/{}.csv'.format(ticker))
+            df.to_csv('stock_dfs/{}.csv'.format(ticker))
 
         except Exception as e:
             print('Failed to update {}:\n\t{}'.format(ticker,e))
