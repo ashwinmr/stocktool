@@ -47,6 +47,10 @@ TICKERS = [
 'DIS',
 'FIT',
 'GPRO',
+'VTSAX',
+'VTIAX',
+'VBTLX',
+'^GSPC', #S&P 500
 ]
 
 def parse_args():
