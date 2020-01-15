@@ -7,49 +7,49 @@ import os
 import pickle
 
 TICKERS = [
-'MSFT',
-'AAPL',
-'TSLA',
-'FB',
-'F',
-'KO',
-'CMCSA',
-'NFLX',
-'INTU',
-'NVDA',
-'BABA',
-'EA',
-'ADBE',
-'ADSK',
-'GOOGL',
-'INTC',
-'COLM',
-'CSCO',
-'PEP',
-'AMZN',
-'SPOT',
-'NIO',
-'VTI',
-'VOO',
-'AMAT',
-'BYDDY',
-'GM',
-'FCAU',
-'GOOG',
-'UBER',
-'LYFT',
-'T',
-'FDX',
-'BIDU',
-'SNAP',
-'QCOM',
-'BYND',
-'DIS',
-'FIT',
-'GPRO',
-'VTSAX',
-'VTIAX',
-'VBTLX',
+'MSFT', # Microsoft
+'AAPL', # Apple
+'TSLA', # Tesla
+'FB', # Facebook
+'F', # Ford
+'KO', # Coca Cola
+'CMCSA', # Comcast
+'NFLX', # Netflix
+'INTU', # Intuit
+'NVDA', # Nvidia
+'BABA', # Alibaba
+'EA', # Electronic Arts
+'ADBE', # Adobe
+'ADSK', # Autodesk
+'GOOGL', # Google voting
+'INTC', # Intel
+'COLM', # Columbia
+'CSCO', # Cisco
+'PEP', # Pepsi
+'AMZN', # Amazon
+'SPOT', # Spotify
+'NIO', # NIO
+'VTI', # Vanguard total stock market index ETF
+'VOO', # Vanguard S&P 500 index ETF
+'AMAT', # Applied materials
+'BYDDY', # BYD Automotive
+'GM', # General motors
+'FCAU', # FCA
+'GOOG', # Google non voting
+'UBER', # Uber
+'LYFT', # Lift
+'T', # AT&T
+'FDX', # Fedex
+'BIDU', # Bidu
+'SNAP', # Snap INC
+'QCOM', # Qualcomm
+'BYND', # Beyond Meat
+'DIS', # Disney
+'FIT', # Fitbit
+'GPRO', # Gopro
+'VTSAX', # Vanguard total stock market index
+'VTIAX', # Vanguard international stock market index
+'VBTLX', # Vanguard total bond market index
 '^GSPC', #S&P 500
 ]
 
@@ -62,6 +62,7 @@ def parse_args():
   plot_parser = subparsers.add_parser('plot', help='plot the stock data')
   plot_parser.add_argument('-s','--start',default='2018/1/1',help="start date in the format YYYY/mm/dd")
   plot_parser.add_argument('-e','--end',default=dt.datetime.today().strftime("%Y/%m/%d"),help="end date in the format YYYY/mm/dd")
+  plot_parser.add_argument('-t','--tickers', nargs='*', help='List of tickers')
   plot_parser.set_defaults(func='plot')
 
   update_parser = subparsers.add_parser('update',help='update the stock data')
@@ -173,13 +174,13 @@ def create_value_legend(tickers,values):
 
     return leg
 
-def plot_data(start,end):
+def plot_data(start,end, tickers):
     # Set start and end
     start = dt.datetime.strptime(start,'%Y/%m/%d')
     end = dt.datetime.strptime(end,'%Y/%m/%d')
 
     # Load the data
-    main_df = load_data()
+    main_df = load_data(tickers)
 
     # Get subset
     df = get_timeframe(main_df,start,end)
@@ -209,7 +210,11 @@ if __name__ == "__main__":
     args = parse_args()
 
     if args.func == 'plot':
-        plot_data(start = args.start, end = args.end)
+        if not args.tickers:
+            tickers = TICKERS
+        else:
+            tickers = args.tickers
+        plot_data(start = args.start, end = args.end, tickers=tickers)
     if args.func == 'update':
         update_data()
     if args.func == 'download':
