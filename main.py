@@ -78,6 +78,19 @@ def parse_args():
 
   return parser.parse_args()
 
+def get_ticker_data():
+    """ Get ticker data from csv
+    """
+    df = pd.read_csv('ticker_data.csv', index_col = 'Ticker')
+    return df
+
+def get_tickers():
+    """ Get tickers from ticker data
+    """
+    df = get_ticker_data()
+    return df.index.tolist()
+
+
 def update_data(tickers = TICKERS):
     """ Update the data to the current date
     """
@@ -209,7 +222,10 @@ def plot_data(start,end, tickers):
     plt.show()
 
 if __name__ == "__main__":
+    get_tickers()
+
     args = parse_args()
+
 
     if args.func == 'plot':
         if not args.tickers:

@@ -1,47 +1,47 @@
-Ticker	Title	Country	Market	Description	Notes
-MSFT	Microsoft	USA			
-AAPL	Apple	USA			
-TSLA	Tesla	USA			
-FB	Facebook	USA			
-F	Ford	USA			
-KO	Coca Cola	USA			
-CMCSA	Comcast	USA			
-NFLX	Netflix	USA			
-INTU	Intuit	USA			
-NVDA	Nvidia	USA			
-BABA	Alibaba	USA			
-EA	Electronic Arts	USA			
-ADBE	Adobe	USA			
-ADSK	Autodesk	USA			
-GOOGL	Google Voting	USA		Voting Shares	
-INTC	Intel	USA			
-COLM	Columbia	USA			
-CSCO	Cisco	USA			
-PEP	Pepsi	USA			
-AMZN	Amazon	USA			
-SPOT	Spotify	USA			
-NIO	Nio	USA			
-VTI	Vanguard Total Stock ETF	USA			
-VOO	Vanguard S&P 500 ETF	USA			
-AMAT	Applied Materials	USA			
-BYDDY	BYD Automotive	USA			
-GM	General Motors	USA			
-FCAU	FCA	USA			
-GOOG	Google Non-Voting	USA		Non Voting Shares	
-UBER	Uber	USA			
-LYFT	Lyft	USA			
-T	Tesla	USA			
-FDX	Fedex	USA			
-BIDU	BIDU	USA			
-SNAP	Snapchat	USA			
-QCOM	Qualcomm	USA			
-BYND	Beyond Meat	USA			
-DIS	Disney	USA			
-FIT	Fitbit	USA			
-GPRO	Gopro	USA			
-VTSAX	Vanguard Total Stock Index	USA			
-VTIAX	Vanguard International Stock Index	USA			
-VBTLX	Vanguard Total Bond Index	USA			
-^GSPC	S&P 500	USA			
-^NSEI	Nifty 50	India	NSE		
-^BSESN	Sensex 30	India	BSE		
+Ticker,Title,Country,Market,Description,Notes
+MSFT,Microsoft,USA,,,
+AAPL,Apple,USA,,,
+TSLA,Tesla,USA,,,
+FB,Facebook,USA,,,
+F,Ford,USA,,,
+KO,Coca Cola,USA,,,
+CMCSA,Comcast,USA,,,
+NFLX,Netflix,USA,,,
+INTU,Intuit,USA,,,
+NVDA,Nvidia,USA,,,
+BABA,Alibaba,USA,,,
+EA,Electronic Arts,USA,,,
+ADBE,Adobe,USA,,,
+ADSK,Autodesk,USA,,,
+GOOGL,Google Voting,USA,,Voting Shares,
+INTC,Intel,USA,,,
+COLM,Columbia,USA,,,
+CSCO,Cisco,USA,,,
+PEP,Pepsi,USA,,,
+AMZN,Amazon,USA,,,
+SPOT,Spotify,USA,,,
+NIO,Nio,USA,,,
+VTI,Vanguard Total Stock ETF,USA,,,
+VOO,Vanguard S&P 500 ETF,USA,,,
+AMAT,Applied Materials,USA,,,
+BYDDY,BYD Automotive,USA,,,
+GM,General Motors,USA,,,
+FCAU,FCA,USA,,,
+GOOG,Google Non-Voting,USA,,Non Voting Shares,
+UBER,Uber,USA,,,
+LYFT,Lyft,USA,,,
+T,Tesla,USA,,,
+FDX,Fedex,USA,,,
+BIDU,BIDU,USA,,,
+SNAP,Snapchat,USA,,,
+QCOM,Qualcomm,USA,,,
+BYND,Beyond Meat,USA,,,
+DIS,Disney,USA,,,
+FIT,Fitbit,USA,,,
+GPRO,Gopro,USA,,,
+VTSAX,Vanguard Total Stock Index,USA,,,
+VTIAX,Vanguard International Stock Index,USA,,,
+VBTLX,Vanguard Total Bond Index,USA,,,
+^GSPC,S&P 500,USA,,,
+^NSEI,Nifty 50,India,NSE,,
+^BSESN,Sensex 30,India,BSE,,
