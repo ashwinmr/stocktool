@@ -3,57 +3,9 @@ import datetime as dt
 import matplotlib.pyplot as plt
 import pandas as pd
 import pandas_datareader.data as web
+import numpy as np
 import os
 import pickle
-
-TICKERS = [
-'MSFT', # Microsoft
-'AAPL', # Apple
-'TSLA', # Tesla
-'FB', # Facebook
-'F', # Ford
-'KO', # Coca Cola
-'CMCSA', # Comcast
-'NFLX', # Netflix
-'INTU', # Intuit
-'NVDA', # Nvidia
-'BABA', # Alibaba
-'EA', # Electronic Arts
-'ADBE', # Adobe
-'ADSK', # Autodesk
-'GOOGL', # Google voting
-'INTC', # Intel
-'COLM', # Columbia
-'CSCO', # Cisco
-'PEP', # Pepsi
-'AMZN', # Amazon
-'SPOT', # Spotify
-'NIO', # NIO
-'VTI', # Vanguard total stock market index ETF
-'VOO', # Vanguard S&P 500 index ETF
-'AMAT', # Applied materials
-'BYDDY', # BYD Automotive
-'GM', # General motors
-'FCAU', # FCA
-'GOOG', # Google non voting
-'UBER', # Uber
-'LYFT', # Lift
-'T', # AT&T
-'FDX', # Fedex
-'BIDU', # Bidu
-'SNAP', # Snap INC
-'QCOM', # Qualcomm
-'BYND', # Beyond Meat
-'DIS', # Disney
-'FIT', # Fitbit
-'GPRO', # Gopro
-'VTSAX', # Vanguard total stock market index
-'VTIAX', # Vanguard international stock market index
-'VBTLX', # Vanguard total bond market index
-'^GSPC', #S&P 500
-'^NSEI', # Nifty 50
-'^BSESN', # Sensex 30
-]
 
 def parse_args():
   """ Parse arguments for program
@@ -91,7 +43,7 @@ def get_tickers():
     return df.index.tolist()
 
 
-def update_data(tickers = TICKERS):
+def update_data(tickers = get_tickers()):
     """ Update the data to the current date
     """
     for ticker in tickers:
@@ -122,7 +74,7 @@ def update_data(tickers = TICKERS):
         except Exception as e:
             print('Failed to update {}:\n\t{}'.format(ticker,e))
     
-def download_data(start, end, tickers = TICKERS, force = False):
+def download_data(start, end, tickers = get_tickers(), force = False):
     """ Download data from yahoo for provided tickers
     """
     if not os.path.exists('stock_dfs'):
@@ -139,7 +91,7 @@ def download_data(start, end, tickers = TICKERS, force = False):
         else:
             print('Already have {}'.format(ticker))
 
-def load_data(tickers = TICKERS):
+def load_data(tickers = get_tickers()):
     main_df = pd.DataFrame()
     for ticker in tickers:
         try:
@@ -159,6 +111,9 @@ def load_data(tickers = TICKERS):
 
 def normalize(df_in):
 
+    # Store normalization factors
+    factors = []
+
     # Get first non null indexes
     idx = df_in.notnull().idxmax()
 
@@ -167,9 +122,11 @@ def normalize(df_in):
 
     # Normalize each column
     for col in df:
-        df[col] = df[col]/df[col].loc[idx[col]]
+        factor = df[col].loc[idx[col]]
+        factors.append(factor)
+        df[col] = df[col]/factor
 
-    return df
+    return df, factors
 
 def get_timeframe(df,start,end):
     """ Get timeframe section from df
@@ -180,12 +137,14 @@ def get_timeframe(df,start,end):
 
     return df.loc[mask]
 
-def create_value_legend(tickers,values):
+def create_legend(tickers,last_values,factors):
 
     leg = []
+    ticker_data = get_ticker_data()
 
     for i in range(len(tickers)):
-        leg.append('{} = {:.2f}'.format(tickers[i],values[i]))
+        title = ticker_data.loc[tickers[i],'Title']
+        leg.append('{} ({}): ({:.0f}/{:.0f}) {:.2f}'.format(title,tickers[i],last_values[i]*factors[i],factors[i], last_values[i]))
 
     return leg
 
@@ -197,20 +156,25 @@ def plot_data(start,end, tickers):
     # Load the data
     main_df = load_data(tickers)
 
-    # Get subset
+    # Get subset of time
     df = get_timeframe(main_df,start,end)
 
     # normalize
-    df = normalize(df)
+    df, factors = normalize(df)
 
     # Sort
+    sort_order = np.argsort(df.loc[df.last_valid_index()].to_numpy()*-1)
+    factors = np.array(factors)[sort_order]
     df = df.sort_values(df.last_valid_index(), ascending = False, axis=1)
 
     # Get last values
     last_values = df.iloc[-1]
 
     # Get legend
-    leg = create_value_legend(list(df),last_values)
+    leg = create_legend(list(df),last_values,factors)
+
+    # Register plotting converter
+    pd.plotting.register_matplotlib_converters()
 
     # Plot
     plt.plot(df)
@@ -222,14 +186,11 @@ def plot_data(start,end, tickers):
     plt.show()
 
 if __name__ == "__main__":
-    get_tickers()
-
     args = parse_args()
-
 
     if args.func == 'plot':
         if not args.tickers:
-            tickers = TICKERS
+            tickers = get_tickers()
         else:
             tickers = args.tickers
         plot_data(start = args.start, end = args.end, tickers=tickers)
