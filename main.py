@@ -51,6 +51,8 @@ TICKERS = [
 'VTIAX', # Vanguard international stock market index
 'VBTLX', # Vanguard total bond market index
 '^GSPC', #S&P 500
+'^NSEI', # Nifty 50
+'^BSESN', # Sensex 30
 ]
 
 def parse_args():
