@@ -19,6 +19,14 @@ def parse_args():
   plot_parser.add_argument('-t','--tickers', nargs='*', help='List of tickers')
   plot_parser.set_defaults(func='plot')
 
+  output_parser = subparsers.add_parser('output', help='output the stock data')
+  output_parser.add_argument('-s','--start',default='2018/1/1',help="start date in the format YYYY/mm/dd")
+  output_parser.add_argument('-e','--end',default=dt.datetime.today().strftime("%Y/%m/%d"),help="end date in the format YYYY/mm/dd")
+  output_parser.add_argument('-t','--tickers', nargs='*', help='List of tickers')
+  output_parser.add_argument('-r','--resample_string', help='Resample string')
+  output_parser.add_argument('-f','--file_path', default='temp/output.csv', help='Output file path')
+  output_parser.set_defaults(func='output')
+
   update_parser = subparsers.add_parser('update',help='update the stock data')
   update_parser.set_defaults(func='update')
 
@@ -148,6 +156,35 @@ def create_legend(tickers,last_values,factors):
 
     return leg
 
+def process_data(start,end,tickers, resample_string = None):
+    """ Get subset of resampled data
+    """
+    # Set start and end
+    start = dt.datetime.strptime(start,'%Y/%m/%d')
+    end = dt.datetime.strptime(end,'%Y/%m/%d')
+
+    # Load the data
+    df = load_data(tickers)
+
+    # Get subset of time
+    df = get_timeframe(df,start,end)
+
+    # Resample
+    if resample_string is not None:
+        df = df.resample(resample_string).mean()
+
+    return df
+
+def output_data(start,end,resample_string, tickers, file_path):
+    """ Output data to csv
+    """
+    df = process_data(start = start,end = end,tickers = tickers, resample_string = resample_string)
+
+    print(df)
+
+    df.to_csv(file_path)
+
+
 def plot_data(start,end, tickers):
     # Set start and end
     start = dt.datetime.strptime(start,'%Y/%m/%d')
@@ -198,3 +235,14 @@ if __name__ == "__main__":
         update_data()
     if args.func == 'download':
         download_data(start = args.start, end = args.end, force = args.force)
+    if args.func == 'output':
+        if not args.tickers:
+            tickers = get_tickers()
+        else:
+            tickers = args.tickers
+        if not args.resample_string:
+            resample_string = None
+        else:
+            resample_string = args.resample_string
+
+        output_data(start = args.start, end=args.end, resample_string = resample_string, tickers = tickers, file_path = args.file_path)
