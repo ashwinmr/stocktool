@@ -220,6 +220,14 @@ def plot_data(start,end, tickers):
     plt.grid('True')
     plt.legend(leg)
 
+    # Shrink current axis by 20%
+    ax = plt.gca()
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+
+    # Put a legend to the right of the current axis
+    ax.legend(leg,loc='center left', bbox_to_anchor=(1, 0.5), prop={'size': 8})
+
     plt.show()
 
 if __name__ == "__main__":
