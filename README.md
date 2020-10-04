@@ -40,11 +40,16 @@ You can use the following flags:
 
 -   -s: start date in the format (yyyy/mm/dd)
 -   -e: end date in the format (yyyy/mm/dd)
+-   -t: list of tickers
 -   -f: force download even if data exists
 
 ## Update stock data
 
 It will update the stock data to the latest date
+
+You can use the following flags:
+
+-   -t: list of tickers
 
 ```
 python main.py update
