@@ -45,7 +45,8 @@ You can use the following flags:
 
 ## Update stock data
 
-It will update the stock data to the latest date
+It will update the stock data to the latest date.  
+It will not update existing data which may change due to stock splits. Use force download for that.  
 
 You can use the following flags:
 
