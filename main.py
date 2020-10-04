@@ -28,12 +28,14 @@ def parse_args():
   output_parser.set_defaults(func='output')
 
   update_parser = subparsers.add_parser('update',help='update the stock data')
+  update_parser.add_argument('-t','--tickers', nargs='*', help='List of tickers')
   update_parser.set_defaults(func='update')
 
   download_parser = subparsers.add_parser('download',help='download the stock data')
   download_parser.add_argument('-s','--start',default='2000/1/1',help="start date in the format YYYY/mm/dd")
   download_parser.add_argument('-e','--end',default=dt.datetime.today().strftime("%Y/%m/%d"),help="end date in the format YYYY/mm/dd")
   download_parser.add_argument('-f','--force',action='store_true',help="force download")
+  download_parser.add_argument('-t','--tickers', nargs='*', help='List of tickers')
   download_parser.set_defaults(func='download')
 
   return parser.parse_args()
@@ -51,7 +53,7 @@ def get_tickers():
     return df.index.tolist()
 
 
-def update_data(tickers = get_tickers()):
+def update_data(tickers):
     """ Update the data to the current date
     """
     for ticker in tickers:
@@ -82,7 +84,7 @@ def update_data(tickers = get_tickers()):
         except Exception as e:
             print('Failed to update {}:\n\t{}'.format(ticker,e))
     
-def download_data(start, end, tickers = get_tickers(), force = False):
+def download_data(start, end, tickers, force = False):
     """ Download data from yahoo for provided tickers
     """
     if not os.path.exists('stock_dfs'):
@@ -240,9 +242,17 @@ if __name__ == "__main__":
             tickers = args.tickers
         plot_data(start = args.start, end = args.end, tickers=tickers)
     if args.func == 'update':
-        update_data()
+        if not args.tickers:
+            tickers = get_tickers()
+        else:
+            tickers = args.tickers
+        update_data(tickers = tickers)
     if args.func == 'download':
-        download_data(start = args.start, end = args.end, force = args.force)
+        if not args.tickers:
+            tickers = get_tickers()
+        else:
+            tickers = args.tickers
+        download_data(start = args.start, end = args.end, tickers = tickers, force = args.force)
     if args.func == 'output':
         if not args.tickers:
             tickers = get_tickers()
