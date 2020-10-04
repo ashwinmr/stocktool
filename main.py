@@ -125,7 +125,7 @@ def normalize(df_in):
     factors = []
 
     # Get first non null indexes
-    idx = df_in.notnull().idxmax()
+    idx = df_in.apply(pd.Series.first_valid_index)
 
     # Copy
     df = df_in.copy()
@@ -137,6 +137,16 @@ def normalize(df_in):
         df[col] = df[col]/factor
 
     return df, factors
+
+def reorder_cols(df, order):
+    """ Reorder columns of a dataframe
+    """
+
+    # Get the list of columns and reorder them
+    cols = df.columns.tolist()
+    cols = np.array(cols)[order]
+
+    return df[cols]
 
 def get_timeframe(df,start,end):
     """ Get timeframe section from df
@@ -201,13 +211,20 @@ def plot_data(start,end, tickers):
     # normalize
     df, factors = normalize(df)
 
-    # Sort
-    sort_order = np.argsort(df.loc[df.last_valid_index()].to_numpy()*-1)
-    factors = np.array(factors)[sort_order]
-    df = df.sort_values(df.last_valid_index(), ascending = False, axis=1)
+    # Get last non null indexes
+    idx = df.apply(pd.Series.last_valid_index)
 
-    # Get last values
-    last_values = df.iloc[-1]
+    # Get last non null values
+    last_values = []
+    for col in df:
+        last_value = df[col].loc[idx[col]]
+        last_values.append(last_value)
+
+    # Sort
+    sort_order = np.argsort(np.array(last_values)*-1)
+    factors = np.array(factors)[sort_order]
+    last_values = np.array(last_values)[sort_order]
+    df = reorder_cols(df,sort_order)
 
     # Get legend
     leg = create_legend(list(df),last_values,factors)
