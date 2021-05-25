@@ -14,7 +14,7 @@ def parse_args():
   subparsers = parser.add_subparsers(dest='sub_cmd',required=True)
 
   plot_parser = subparsers.add_parser('plot', help='plot the stock data')
-  plot_parser.add_argument('-s','--start',default='2018/1/1',help="start date in the format YYYY/mm/dd")
+  plot_parser.add_argument('-s','--start',default='2020/1/1',help="start date in the format YYYY/mm/dd")
   plot_parser.add_argument('-e','--end',default=dt.datetime.today().strftime("%Y/%m/%d"),help="end date in the format YYYY/mm/dd")
   plot_parser.add_argument('-t','--tickers', nargs='*', help='List of tickers')
   plot_parser.set_defaults(func='plot')
@@ -43,7 +43,9 @@ def parse_args():
 def get_ticker_data():
     """ Get ticker data from csv
     """
-    df = pd.read_csv('ticker_data.csv', index_col = 'Ticker')
+    dirname = os.path.dirname(__file__)
+    ticker_data_path = os.path.join(dirname, 'ticker_data.csv')
+    df = pd.read_csv(ticker_data_path, index_col = 'Ticker')
     return df
 
 def get_tickers():
@@ -52,6 +54,12 @@ def get_tickers():
     df = get_ticker_data()
     return df.index.tolist()
 
+def get_stock_df_path(ticker):
+    """ Get path to stock df from ticker
+    """
+    dirname = os.path.dirname(__file__)
+    stock_dfs_path = os.path.join(dirname, 'stock_dfs','{}.csv'.format(ticker))
+    return stock_dfs_path
 
 def update_data(tickers):
     """ Update the data to the current date
@@ -61,7 +69,7 @@ def update_data(tickers):
             print('Updating {}'.format(ticker))
 
             # Load old data
-            df_old = pd.read_csv('stock_dfs/{}.csv'.format(ticker),index_col = 'Date',parse_dates = ['Date'])
+            df_old = pd.read_csv(get_stock_df_path(ticker),index_col = 'Date',parse_dates = ['Date'])
 
             # Get last date
             last_date = df_old.index[-1]
@@ -79,7 +87,7 @@ def update_data(tickers):
             df = df.reset_index().drop_duplicates(subset='Date').set_index('Date')
 
             # Save
-            df.to_csv('stock_dfs/{}.csv'.format(ticker))
+            df.to_csv(get_stock_df_path(ticker))
 
         except Exception as e:
             print('Failed to update {}:\n\t{}'.format(ticker,e))
@@ -91,11 +99,11 @@ def download_data(start, end, tickers, force = False):
         os.makedirs('stock_dfs')
 
     for ticker in tickers:
-        if not os.path.exists('stock_dfs/{}.csv'.format(ticker)) or force:
+        if not os.path.exists(get_stock_df_path(ticker)) or force:
             try:
                 print('Downloading {}'.format(ticker))
                 df = web.DataReader(ticker,'yahoo',start,end)
-                df.to_csv('stock_dfs/{}.csv'.format(ticker))
+                df.to_csv(get_stock_df_path(ticker))
             except Exception as e:
                 print('Failed to download {}:\n\t{}'.format(ticker,e))
         else:
@@ -106,7 +114,7 @@ def load_data(tickers = get_tickers()):
     for ticker in tickers:
         try:
             print('Compiling {}'.format(ticker))
-            df = pd.read_csv('stock_dfs/{}.csv'.format(ticker), index_col = 'Date',parse_dates = ['Date'])
+            df = pd.read_csv(get_stock_df_path(ticker), index_col = 'Date',parse_dates = ['Date'])
             df.rename(columns = {'Adj Close':ticker}, inplace = True)
             df.drop(['Open','High','Low','Close','Volume'],1,inplace=True)
 
