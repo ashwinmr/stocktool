@@ -163,7 +163,13 @@ def get_timeframe(df,start,end):
     # Create mask between time
     mask = (df.index > start) & (df.index < end)
 
-    return df.loc[mask]
+    # Set output
+    df_out = df.loc[mask].copy()
+
+    # Remove empty columns
+    df_out.dropna(axis='columns',how='all',inplace=True)
+
+    return df_out
 
 def create_legend(tickers,last_values,factors):
 
