@@ -6,6 +6,10 @@ import pandas_datareader.data as web
 import numpy as np
 import os
 import pickle
+from mpldatacursor import datacursor
+
+# A mapping from legend to line for clickable legend
+LegToLine = dict()
 
 def parse_args():
   """ Parse arguments for program
@@ -211,6 +215,28 @@ def output_data(start,end,resample_string, tickers, file_path):
     df.to_csv(file_path)
 
 
+def onpick(event):
+    """ Handle pick event on the legend
+    """
+
+    # on the click event, find the orig line corresponding to the legend line, and toggle visibility
+    legline = event.artist
+    if legline in LegToLine:
+        origline = LegToLine[legline]
+    else:
+        return
+    vis = not origline.get_visible()
+    origline.set_visible(vis)
+    # Change the alpha on the line in the legend so we can see what lines have been toggled
+    if vis:
+        legline.set_alpha(1.0)
+    else:
+        legline.set_alpha(0.2)
+
+    # Redraw the figure
+    plt.gcf().canvas.draw()
+
+
 def plot_data(start,end, tickers):
     # Set start and end
     start = dt.datetime.strptime(start,'%Y/%m/%d')
@@ -259,7 +285,18 @@ def plot_data(start,end, tickers):
     ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
 
     # Put a legend to the right of the current axis
-    ax.legend(leg,loc='center left', bbox_to_anchor=(1, 0.5), prop={'size': 8})
+    leg = ax.legend(leg,loc='center left', bbox_to_anchor=(1, 0.5), prop={'size': 8})
+
+    # Make the legend clickable
+    for legline,origline in zip(leg.get_lines(),ax.get_lines()):
+        legline.set_picker(5) # 5pt tolerance
+        LegToLine[legline] = origline
+
+    # Add data cursors
+    datacursor(display='multiple',draggable=True)
+
+    # Handle pick events
+    plt.gcf().canvas.mpl_connect('pick_event',onpick)
 
     plt.show()
 
