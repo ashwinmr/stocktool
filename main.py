@@ -13,17 +13,39 @@ from mpldatacursor import datacursor
 LegToLine = dict()
 
 TICKER_INFO_FILE = 'ticker_info.csv'
+TICKER_DATA_PATH = 'stock_dfs'
 
 class Securities:
     def __init__(self):
         self.ticker_info = self.load_ticker_info()
 
     def load_ticker_info(self):
-        """ Load the ticker data
+        """ Load the ticker info
         """
         dirname = os.path.dirname(__file__)
         ticker_info_path = os.path.join(dirname,TICKER_INFO_FILE)
         return pd.read_csv(ticker_info_path, index_col = 'Ticker')
+
+    def get_ticker_data_path(self,ticker):
+        """ Get the file path for ticker data
+        """
+        dirname = os.path.dirname(__file__)
+        ticker_data_path = os.path.join(dirname,TICKER_DATA_PATH,'{}.csv'.format(ticker))
+        return ticker_data_path
+
+    def get_ticker_data(self,ticker):
+        """ Get the data for a ticker
+        """
+        try:
+            print('Compiling {}'.format(ticker))
+            ticker_data_path = self.get_ticker_data_path(ticker)
+            df = pd.read_csv(ticker_data_path, index_col = 'Date',parse_dates = ['Date'])
+            df.rename(columns = {'Adj Close':ticker}, inplace = True)
+            df.drop(['Open','High','Low','Close','Volume'],1,inplace=True)
+            return df
+        except Exception as e:
+            print('Failed to compile {}:\n\t{}'.format(ticker,e))
+            return None
     
     def get_all_tickers(self):
         """ Get all tickers
@@ -35,6 +57,84 @@ class Securities:
         """
         title = self.ticker_info.loc[ticker,'Title']
         return title
+
+    def load_data(self,tickers):
+        """ Load data for tickers
+        """
+        main_df = pd.DataFrame()
+        for ticker in tickers:
+            df = self.get_ticker_data(ticker)
+            if df is not None:
+                if main_df.empty:
+                    main_df = df
+                else:
+                    main_df = main_df.join(df,how='outer')
+        return main_df
+
+    def plot_data(self,start,end,tickers):
+        # Set start and end
+        start = dt.datetime.strptime(start,'%Y/%m/%d')
+        end = dt.datetime.strptime(end,'%Y/%m/%d')
+
+        # Load the data
+        main_df = self.load_data(tickers)
+
+        # Get subset of time
+        df = get_timeframe(main_df,start,end)
+
+        # normalize
+        df, factors = normalize(df)
+
+        # Get last non null indexes
+        idx = df.apply(pd.Series.last_valid_index)
+
+        # Get last non null values
+        last_values = []
+        for col in df:
+            last_value = df[col].loc[idx[col]]
+            last_values.append(last_value)
+
+        # Sort
+        sort_order = np.argsort(np.array(last_values)*-1)
+        factors = np.array(factors)[sort_order]
+        last_values = np.array(last_values)[sort_order]
+        df = reorder_cols(df,sort_order)
+
+        # Get legend
+        tickers = list(df)
+        titles = [self.get_title(ticker) for ticker in tickers]
+        leg = create_legend(tickers,titles,last_values,factors)
+
+        # Register plotting converter
+        pd.plotting.register_matplotlib_converters()
+
+        # Plot
+        plt.plot(df)
+        plt.xlabel('date')
+        plt.ylabel('gain')
+        plt.grid('True')
+        plt.legend(leg)
+
+        # Shrink current axis by 20%
+        ax = plt.gca()
+        box = ax.get_position()
+        ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+
+        # Put a legend to the right of the current axis
+        leg = ax.legend(leg,loc='center left', bbox_to_anchor=(1, 0.5), prop={'size': 8})
+
+        # Make the legend clickable
+        for legline,origline in zip(leg.get_lines(),ax.get_lines()):
+            legline.set_picker(5) # 5pt tolerance
+            LegToLine[legline] = origline
+
+        # Add data cursors
+        datacursor(display='multiple',draggable=True)
+
+        # Handle pick events
+        plt.gcf().canvas.mpl_connect('pick_event',onpick)
+
+        plt.show()
 
 def parse_args():
   """ Parse arguments for program
@@ -186,13 +286,12 @@ def get_timeframe(df,start,end):
 
     return df_out
 
-def create_legend(tickers,last_values,factors,secs):
+def create_legend(tickers,titles,last_values,factors):
 
     leg = []
 
-    for i in range(len(tickers)):
-        title = secs.get_title(tickers[i])
-        leg.append('{} ({}): ({:.0f}/{:.0f}) {:.2f}'.format(title,tickers[i],last_values[i]*factors[i],factors[i], last_values[i]))
+    for ticker,title,factor,last_value in zip(tickers,titles,factors,last_values):
+        leg.append('{} ({}): ({:.0f}/{:.0f}) {:.2f}'.format(title,ticker,last_value*factor,factor, last_value))
 
     return leg
 
@@ -246,70 +345,6 @@ def onpick(event):
     # Redraw the figure
     plt.gcf().canvas.draw()
 
-
-def plot_data(start,end, tickers, secs):
-    # Set start and end
-    start = dt.datetime.strptime(start,'%Y/%m/%d')
-    end = dt.datetime.strptime(end,'%Y/%m/%d')
-
-    # Load the data
-    main_df = load_data(tickers)
-
-    # Get subset of time
-    df = get_timeframe(main_df,start,end)
-
-    # normalize
-    df, factors = normalize(df)
-
-    # Get last non null indexes
-    idx = df.apply(pd.Series.last_valid_index)
-
-    # Get last non null values
-    last_values = []
-    for col in df:
-        last_value = df[col].loc[idx[col]]
-        last_values.append(last_value)
-
-    # Sort
-    sort_order = np.argsort(np.array(last_values)*-1)
-    factors = np.array(factors)[sort_order]
-    last_values = np.array(last_values)[sort_order]
-    df = reorder_cols(df,sort_order)
-
-    # Get legend
-    leg = create_legend(list(df),last_values,factors,secs)
-
-    # Register plotting converter
-    pd.plotting.register_matplotlib_converters()
-
-    # Plot
-    plt.plot(df)
-    plt.xlabel('date')
-    plt.ylabel('gain')
-    plt.grid('True')
-    plt.legend(leg)
-
-    # Shrink current axis by 20%
-    ax = plt.gca()
-    box = ax.get_position()
-    ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-
-    # Put a legend to the right of the current axis
-    leg = ax.legend(leg,loc='center left', bbox_to_anchor=(1, 0.5), prop={'size': 8})
-
-    # Make the legend clickable
-    for legline,origline in zip(leg.get_lines(),ax.get_lines()):
-        legline.set_picker(5) # 5pt tolerance
-        LegToLine[legline] = origline
-
-    # Add data cursors
-    datacursor(display='multiple',draggable=True)
-
-    # Handle pick events
-    plt.gcf().canvas.mpl_connect('pick_event',onpick)
-
-    plt.show()
-
 if __name__ == "__main__":
 
     # Initialize securities object
@@ -322,7 +357,7 @@ if __name__ == "__main__":
             tickers = secs.get_all_tickers()
         else:
             tickers = args.tickers
-        plot_data(start = args.start, end = args.end, tickers=tickers, secs=secs)
+        secs.plot_data(start = args.start, end = args.end, tickers=tickers)
     if args.func == 'update':
         if not args.tickers:
             tickers = secs.get_all_tickers()
