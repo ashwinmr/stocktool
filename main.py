@@ -12,28 +12,28 @@ from mpldatacursor import datacursor
 # A mapping from legend to line for clickable legend
 LegToLine = dict()
 
-TICKER_DATA_FILE = 'ticker_data.csv'
+TICKER_INFO_FILE = 'ticker_info.csv'
 
 class Securities:
     def __init__(self):
-        self.data = self.load_data()
+        self.ticker_info = self.load_ticker_info()
 
-    def load_data(self):
+    def load_ticker_info(self):
         """ Load the ticker data
         """
         dirname = os.path.dirname(__file__)
-        ticker_data_path = os.path.join(dirname,TICKER_DATA_FILE)
-        return pd.read_csv(ticker_data_path, index_col = 'Ticker')
+        ticker_info_path = os.path.join(dirname,TICKER_INFO_FILE)
+        return pd.read_csv(ticker_info_path, index_col = 'Ticker')
     
     def get_all_tickers(self):
         """ Get all tickers
         """
-        return self.data.index.tolist()
+        return self.ticker_info.index.tolist()
 
     def get_title(self,ticker):
         """ Get title for ticker
         """
-        title = self.data.loc[ticker,'Title']
+        title = self.ticker_info.loc[ticker,'Title']
         return title
 
 def parse_args():
