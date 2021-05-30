@@ -52,6 +52,12 @@ class Securities:
         """
         return self.ticker_info.index.tolist()
 
+    def get_tickers_by_group(self,group):
+        """ Get tickers by group
+        """
+        df = self.ticker_info
+        return df.loc[df['Group']==group].index.tolist()
+
     def get_title(self,ticker):
         """ Get title for ticker
         """
@@ -146,6 +152,7 @@ def parse_args():
   plot_parser.add_argument('-s','--start',default='2020/1/1',help="start date in the format YYYY/mm/dd")
   plot_parser.add_argument('-e','--end',default=dt.datetime.today().strftime("%Y/%m/%d"),help="end date in the format YYYY/mm/dd")
   plot_parser.add_argument('-t','--tickers', nargs='*', help='List of tickers')
+  plot_parser.add_argument('-g','--group', help='Group')
   plot_parser.set_defaults(func='plot')
 
   output_parser = subparsers.add_parser('output', help='output the stock data')
@@ -353,10 +360,12 @@ if __name__ == "__main__":
     args = parse_args()
 
     if args.func == 'plot':
-        if not args.tickers:
-            tickers = secs.get_all_tickers()
-        else:
+        if args.group:
+            tickers = secs.get_tickers_by_group(args.group)
+        elif args.tickers:
             tickers = args.tickers
+        else:
+            tickers = secs.get_all_tickers()
         secs.plot_data(start = args.start, end = args.end, tickers=tickers)
     if args.func == 'update':
         if not args.tickers:
