@@ -9,11 +9,12 @@ import os
 import pickle
 from mpldatacursor import datacursor
 
-# A mapping from legend to line for clickable legend
-LegToLine = dict()
+# Global variables
 
 TICKER_INFO_FILE = 'ticker_info.csv'
-TICKER_DATA_PATH = 'stock_dfs'
+TICKER_DATA_PATH = 'sec_dfs'
+# A mapping from legend to line for clickable legend
+LegToLine = dict()
 
 class Securities:
     def __init__(self):
@@ -57,6 +58,12 @@ class Securities:
         """
         df = self.ticker_info
         return df.loc[df['Group']==group].index.tolist()
+
+    def get_tickers_by_country(self,country):
+        """ Get tickers by country
+        """
+        df = self.ticker_info
+        return df.loc[df['Country']==country].index.tolist()
 
     def get_title(self,ticker):
         """ Get title for ticker
@@ -107,9 +114,10 @@ class Securities:
         df = reorder_cols(df,sort_order)
 
         # Get legend
-        tickers = list(df)
+        leg = []
         titles = [self.get_title(ticker) for ticker in tickers]
-        leg = create_legend(tickers,titles,last_values,factors)
+        for ticker,title,factor,last_value in zip(tickers,titles,factors,last_values):
+            leg.append('{} ({}): ({:.0f}/{:.0f}) {:.2f}'.format(title,ticker,last_value*factor,factor, last_value))
 
         # Register plotting converter
         pd.plotting.register_matplotlib_converters()
@@ -141,47 +149,6 @@ class Securities:
         plt.gcf().canvas.mpl_connect('pick_event',onpick)
 
         plt.show()
-
-def parse_args():
-  """ Parse arguments for program
-  """
-  parser = argparse.ArgumentParser(description="Program for analyzing stock")
-  subparsers = parser.add_subparsers(dest='sub_cmd',required=True)
-
-  plot_parser = subparsers.add_parser('plot', help='plot the stock data')
-  plot_parser.add_argument('-s','--start',default='2020/1/1',help="start date in the format YYYY/mm/dd")
-  plot_parser.add_argument('-e','--end',default=dt.datetime.today().strftime("%Y/%m/%d"),help="end date in the format YYYY/mm/dd")
-  plot_parser.add_argument('-t','--tickers', nargs='*', help='List of tickers')
-  plot_parser.add_argument('-g','--group', help='Group')
-  plot_parser.set_defaults(func='plot')
-
-  output_parser = subparsers.add_parser('output', help='output the stock data')
-  output_parser.add_argument('-s','--start',default='2018/1/1',help="start date in the format YYYY/mm/dd")
-  output_parser.add_argument('-e','--end',default=dt.datetime.today().strftime("%Y/%m/%d"),help="end date in the format YYYY/mm/dd")
-  output_parser.add_argument('-t','--tickers', nargs='*', help='List of tickers')
-  output_parser.add_argument('-r','--resample_string', help='Resample string')
-  output_parser.add_argument('-f','--file_path', default='temp/output.csv', help='Output file path')
-  output_parser.set_defaults(func='output')
-
-  update_parser = subparsers.add_parser('update',help='update the stock data')
-  update_parser.add_argument('-t','--tickers', nargs='*', help='List of tickers')
-  update_parser.set_defaults(func='update')
-
-  download_parser = subparsers.add_parser('download',help='download the stock data')
-  download_parser.add_argument('-s','--start',default='2000/1/1',help="start date in the format YYYY/mm/dd")
-  download_parser.add_argument('-e','--end',default=dt.datetime.today().strftime("%Y/%m/%d"),help="end date in the format YYYY/mm/dd")
-  download_parser.add_argument('-f','--force',action='store_true',help="force download")
-  download_parser.add_argument('-t','--tickers', nargs='*', help='List of tickers')
-  download_parser.set_defaults(func='download')
-
-  return parser.parse_args()
-
-def get_stock_df_path(ticker):
-    """ Get path to stock df from ticker
-    """
-    dirname = os.path.dirname(__file__)
-    stock_dfs_path = os.path.join(dirname, 'stock_dfs','{}.csv'.format(ticker))
-    return stock_dfs_path
 
 def update_data(tickers):
     """ Update the data to the current date
@@ -231,24 +198,6 @@ def download_data(start, end, tickers, force = False):
         else:
             print('Already have {}'.format(ticker))
 
-def load_data(tickers):
-    main_df = pd.DataFrame()
-    for ticker in tickers:
-        try:
-            print('Compiling {}'.format(ticker))
-            df = pd.read_csv(get_stock_df_path(ticker), index_col = 'Date',parse_dates = ['Date'])
-            df.rename(columns = {'Adj Close':ticker}, inplace = True)
-            df.drop(['Open','High','Low','Close','Volume'],1,inplace=True)
-
-            if main_df.empty:
-                main_df = df
-            else:
-                main_df = main_df.join(df,how='outer')
-        except Exception as e:
-            print('Failed to compile {}:\n\t{}'.format(ticker,e))
-
-    return main_df
-
 def normalize(df_in):
 
     # Store normalization factors
@@ -293,15 +242,6 @@ def get_timeframe(df,start,end):
 
     return df_out
 
-def create_legend(tickers,titles,last_values,factors):
-
-    leg = []
-
-    for ticker,title,factor,last_value in zip(tickers,titles,factors,last_values):
-        leg.append('{} ({}): ({:.0f}/{:.0f}) {:.2f}'.format(title,ticker,last_value*factor,factor, last_value))
-
-    return leg
-
 def process_data(start,end,tickers, resample_string = None):
     """ Get subset of resampled data
     """
@@ -330,7 +270,6 @@ def output_data(start,end,resample_string, tickers, file_path):
 
     df.to_csv(file_path)
 
-
 def onpick(event):
     """ Handle pick event on the legend
     """
@@ -352,6 +291,41 @@ def onpick(event):
     # Redraw the figure
     plt.gcf().canvas.draw()
 
+def parse_args():
+  """ Parse arguments for program
+  """
+  parser = argparse.ArgumentParser(description="Program for analyzing stock")
+  subparsers = parser.add_subparsers(dest='sub_cmd',required=True)
+
+  plot_parser = subparsers.add_parser('plot', help='plot the stock data')
+  plot_parser.add_argument('-s','--start',default='2021/1/1',help="start date in the format YYYY/mm/dd")
+  plot_parser.add_argument('-e','--end',default=dt.datetime.today().strftime("%Y/%m/%d"),help="end date in the format YYYY/mm/dd")
+  plot_parser.add_argument('-t','--tickers', nargs='*', help='List of tickers')
+  plot_parser.add_argument('-g','--group', help='Group')
+  plot_parser.add_argument('-c','--country', help='Country')
+  plot_parser.set_defaults(func='plot')
+
+  output_parser = subparsers.add_parser('output', help='output the stock data')
+  output_parser.add_argument('-s','--start',default='2018/1/1',help="start date in the format YYYY/mm/dd")
+  output_parser.add_argument('-e','--end',default=dt.datetime.today().strftime("%Y/%m/%d"),help="end date in the format YYYY/mm/dd")
+  output_parser.add_argument('-t','--tickers', nargs='*', help='List of tickers')
+  output_parser.add_argument('-r','--resample_string', help='Resample string')
+  output_parser.add_argument('-f','--file_path', default='temp/output.csv', help='Output file path')
+  output_parser.set_defaults(func='output')
+
+  update_parser = subparsers.add_parser('update',help='update the stock data')
+  update_parser.add_argument('-t','--tickers', nargs='*', help='List of tickers')
+  update_parser.set_defaults(func='update')
+
+  download_parser = subparsers.add_parser('download',help='download the stock data')
+  download_parser.add_argument('-s','--start',default='2000/1/1',help="start date in the format YYYY/mm/dd")
+  download_parser.add_argument('-e','--end',default=dt.datetime.today().strftime("%Y/%m/%d"),help="end date in the format YYYY/mm/dd")
+  download_parser.add_argument('-f','--force',action='store_true',help="force download")
+  download_parser.add_argument('-t','--tickers', nargs='*', help='List of tickers')
+  download_parser.set_defaults(func='download')
+
+  return parser.parse_args()
+
 if __name__ == "__main__":
 
     # Initialize securities object
@@ -362,6 +336,8 @@ if __name__ == "__main__":
     if args.func == 'plot':
         if args.group:
             tickers = secs.get_tickers_by_group(args.group)
+        elif args.country:
+            tickers = secs.get_tickers_by_country(args.country)
         elif args.tickers:
             tickers = args.tickers
         else:
