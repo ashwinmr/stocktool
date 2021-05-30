@@ -67,5 +67,5 @@ You can use the following flags:
 -   -s: start date in the format (yyyy/mm/dd)
 -   -e: end date in the format (yyyy/mm/dd)
 -   -t: list of tickers
--   -r: resample string (d,m,y)
+-   -r: resample string (d or m or y)
 -   -f: output file path

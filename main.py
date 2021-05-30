@@ -84,6 +84,80 @@ class Securities:
                     main_df = main_df.join(df,how='outer')
         return main_df
 
+    def update_ticker_data(self,tickers):
+        """ Update the security data to the current date
+        """
+        for ticker in tickers:
+            try:
+                print('Updating {}'.format(ticker))
+
+                # Load old data
+                df_old = pd.read_csv(self.get_ticker_data_path(ticker),index_col = 'Date',parse_dates = ['Date'])
+
+                # Get last date
+                last_date = df_old.index[-1]
+
+                # Download new data
+                start = last_date
+                end = dt.datetime.today()
+                df_new = web.DataReader(ticker,'yahoo',start,end)
+
+                # Append
+                df = df_old.append(df_new)
+
+                # Remove duplicates
+                # Dropping duplicates using index doesn't work
+                df = df.reset_index().drop_duplicates(subset='Date').set_index('Date')
+
+                # Save
+                df.to_csv(self.get_ticker_data_path(ticker))
+
+            except Exception as e:
+                print('Failed to update {}:\n\t{}'.format(ticker,e))
+
+    def download_ticker_data(self,start, end, tickers, force = False):
+        """ Download data from yahoo for provided tickers
+        """
+        if not os.path.exists(TICKER_DATA_PATH):
+            os.makedirs(TICKER_DATA_PATH)
+
+        for ticker in tickers:
+            if not os.path.exists(self.get_ticker_data_path(ticker)) or force:
+                try:
+                    print('Downloading {}'.format(ticker))
+                    df = web.DataReader(ticker,'yahoo',start,end)
+                    df.to_csv(self.get_ticker_data_path(ticker))
+                except Exception as e:
+                    print('Failed to download {}:\n\t{}'.format(ticker,e))
+            else:
+                print('Already have {}'.format(ticker))
+
+    def process_ticker_data(self,start,end,tickers, resample_string = None):
+        """ Get subset of resampled data
+        """
+        # Set start and end
+        start = dt.datetime.strptime(start,'%Y/%m/%d')
+        end = dt.datetime.strptime(end,'%Y/%m/%d')
+
+        # Load the data
+        df = self.load_data(tickers)
+
+        # Get subset of time
+        df = get_timeframe(df,start,end)
+
+        # Resample
+        if resample_string is not None:
+            df = df.resample(resample_string).mean()
+
+        return df
+
+    def output_ticker_data(self,start,end,resample_string, tickers, file_path):
+        """ Output data to csv
+        """
+        df = self.process_ticker_data(start = start,end = end,tickers = tickers, resample_string = resample_string)
+        print(df)
+        df.to_csv(file_path)
+
     def plot_data(self,start,end,tickers):
         # Set start and end
         start = dt.datetime.strptime(start,'%Y/%m/%d')
@@ -112,6 +186,7 @@ class Securities:
         factors = np.array(factors)[sort_order]
         last_values = np.array(last_values)[sort_order]
         df = reorder_cols(df,sort_order)
+        tickers = list(df)
 
         # Get legend
         leg = []
@@ -149,54 +224,6 @@ class Securities:
         plt.gcf().canvas.mpl_connect('pick_event',onpick)
 
         plt.show()
-
-def update_data(tickers):
-    """ Update the data to the current date
-    """
-    for ticker in tickers:
-        try:
-            print('Updating {}'.format(ticker))
-
-            # Load old data
-            df_old = pd.read_csv(get_stock_df_path(ticker),index_col = 'Date',parse_dates = ['Date'])
-
-            # Get last date
-            last_date = df_old.index[-1]
-
-            # Download new data
-            start = last_date
-            end = dt.datetime.today()
-            df_new = web.DataReader(ticker,'yahoo',start,end)
-
-            # Append
-            df = df_old.append(df_new)
-
-            # Remove duplicates
-            # Dropping duplicates using index doesn't work
-            df = df.reset_index().drop_duplicates(subset='Date').set_index('Date')
-
-            # Save
-            df.to_csv(get_stock_df_path(ticker))
-
-        except Exception as e:
-            print('Failed to update {}:\n\t{}'.format(ticker,e))
-    
-def download_data(start, end, tickers, force = False):
-    """ Download data from yahoo for provided tickers
-    """
-    if not os.path.exists('stock_dfs'):
-        os.makedirs('stock_dfs')
-
-    for ticker in tickers:
-        if not os.path.exists(get_stock_df_path(ticker)) or force:
-            try:
-                print('Downloading {}'.format(ticker))
-                df = web.DataReader(ticker,'yahoo',start,end)
-                df.to_csv(get_stock_df_path(ticker))
-            except Exception as e:
-                print('Failed to download {}:\n\t{}'.format(ticker,e))
-        else:
-            print('Already have {}'.format(ticker))
 
 def normalize(df_in):
 
@@ -241,25 +268,6 @@ def get_timeframe(df,start,end):
     df_out.dropna(axis='columns',how='all',inplace=True)
 
     return df_out
-
-def process_data(start,end,tickers, resample_string = None):
-    """ Get subset of resampled data
-    """
-    # Set start and end
-    start = dt.datetime.strptime(start,'%Y/%m/%d')
-    end = dt.datetime.strptime(end,'%Y/%m/%d')
-
-    # Load the data
-    df = load_data(tickers)
-
-    # Get subset of time
-    df = get_timeframe(df,start,end)
-
-    # Resample
-    if resample_string is not None:
-        df = df.resample(resample_string).mean()
-
-    return df
 
 def output_data(start,end,resample_string, tickers, file_path):
     """ Output data to csv
@@ -311,10 +319,14 @@ def parse_args():
   output_parser.add_argument('-t','--tickers', nargs='*', help='List of tickers')
   output_parser.add_argument('-r','--resample_string', help='Resample string')
   output_parser.add_argument('-f','--file_path', default='temp/output.csv', help='Output file path')
+  output_parser.add_argument('-g','--group', help='Group')
+  output_parser.add_argument('-c','--country', help='Country')
   output_parser.set_defaults(func='output')
 
   update_parser = subparsers.add_parser('update',help='update the stock data')
   update_parser.add_argument('-t','--tickers', nargs='*', help='List of tickers')
+  update_parser.add_argument('-g','--group', help='Group')
+  update_parser.add_argument('-c','--country', help='Country')
   update_parser.set_defaults(func='update')
 
   download_parser = subparsers.add_parser('download',help='download the stock data')
@@ -322,6 +334,8 @@ def parse_args():
   download_parser.add_argument('-e','--end',default=dt.datetime.today().strftime("%Y/%m/%d"),help="end date in the format YYYY/mm/dd")
   download_parser.add_argument('-f','--force',action='store_true',help="force download")
   download_parser.add_argument('-t','--tickers', nargs='*', help='List of tickers')
+  download_parser.add_argument('-g','--group', help='Group')
+  download_parser.add_argument('-c','--country', help='Country')
   download_parser.set_defaults(func='download')
 
   return parser.parse_args()
@@ -333,36 +347,25 @@ if __name__ == "__main__":
 
     args = parse_args()
 
+    # Select tickers
+    if args.group:
+        tickers = secs.get_tickers_by_group(args.group)
+    elif args.country:
+        tickers = secs.get_tickers_by_country(args.country)
+    elif args.tickers:
+        tickers = args.tickers
+    else:
+        tickers = secs.get_all_tickers()
+
     if args.func == 'plot':
-        if args.group:
-            tickers = secs.get_tickers_by_group(args.group)
-        elif args.country:
-            tickers = secs.get_tickers_by_country(args.country)
-        elif args.tickers:
-            tickers = args.tickers
-        else:
-            tickers = secs.get_all_tickers()
         secs.plot_data(start = args.start, end = args.end, tickers=tickers)
     if args.func == 'update':
-        if not args.tickers:
-            tickers = secs.get_all_tickers()
-        else:
-            tickers = args.tickers
-        update_data(tickers = tickers)
+        secs.update_ticker_data(tickers = tickers)
     if args.func == 'download':
-        if not args.tickers:
-            tickers = secs.get_all_tickers()
-        else:
-            tickers = args.tickers
-        download_data(start = args.start, end = args.end, tickers = tickers, force = args.force)
+        secs.download_ticker_data(start = args.start, end = args.end, tickers = tickers, force = args.force)
     if args.func == 'output':
-        if not args.tickers:
-            tickers = secs.get_all_tickers()
-        else:
-            tickers = args.tickers
         if not args.resample_string:
             resample_string = None
         else:
             resample_string = args.resample_string
-
-        output_data(start = args.start, end=args.end, resample_string = resample_string, tickers = tickers, file_path = args.file_path)
+        secs.output_ticker_data(start = args.start, end=args.end, resample_string = resample_string, tickers = tickers, file_path = args.file_path)
