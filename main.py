@@ -1,5 +1,6 @@
 import argparse
 import datetime as dt
+from posixpath import dirname
 import matplotlib.pyplot as plt
 import pandas as pd
 import pandas_datareader.data as web
@@ -10,6 +11,30 @@ from mpldatacursor import datacursor
 
 # A mapping from legend to line for clickable legend
 LegToLine = dict()
+
+TICKER_DATA_FILE = 'ticker_data.csv'
+
+class Securities:
+    def __init__(self):
+        self.data = self.load_data()
+
+    def load_data(self):
+        """ Load the ticker data
+        """
+        dirname = os.path.dirname(__file__)
+        ticker_data_path = os.path.join(dirname,TICKER_DATA_FILE)
+        return pd.read_csv(ticker_data_path, index_col = 'Ticker')
+    
+    def get_all_tickers(self):
+        """ Get all tickers
+        """
+        return self.data.index.tolist()
+
+    def get_title(self,ticker):
+        """ Get title for ticker
+        """
+        title = self.data.loc[ticker,'Title']
+        return title
 
 def parse_args():
   """ Parse arguments for program
@@ -43,20 +68,6 @@ def parse_args():
   download_parser.set_defaults(func='download')
 
   return parser.parse_args()
-
-def get_ticker_data():
-    """ Get ticker data from csv
-    """
-    dirname = os.path.dirname(__file__)
-    ticker_data_path = os.path.join(dirname, 'ticker_data.csv')
-    df = pd.read_csv(ticker_data_path, index_col = 'Ticker')
-    return df
-
-def get_tickers():
-    """ Get tickers from ticker data
-    """
-    df = get_ticker_data()
-    return df.index.tolist()
 
 def get_stock_df_path(ticker):
     """ Get path to stock df from ticker
@@ -113,7 +124,7 @@ def download_data(start, end, tickers, force = False):
         else:
             print('Already have {}'.format(ticker))
 
-def load_data(tickers = get_tickers()):
+def load_data(tickers):
     main_df = pd.DataFrame()
     for ticker in tickers:
         try:
@@ -175,13 +186,12 @@ def get_timeframe(df,start,end):
 
     return df_out
 
-def create_legend(tickers,last_values,factors):
+def create_legend(tickers,last_values,factors,secs):
 
     leg = []
-    ticker_data = get_ticker_data()
 
     for i in range(len(tickers)):
-        title = ticker_data.loc[tickers[i],'Title']
+        title = secs.get_title(tickers[i])
         leg.append('{} ({}): ({:.0f}/{:.0f}) {:.2f}'.format(title,tickers[i],last_values[i]*factors[i],factors[i], last_values[i]))
 
     return leg
@@ -237,7 +247,7 @@ def onpick(event):
     plt.gcf().canvas.draw()
 
 
-def plot_data(start,end, tickers):
+def plot_data(start,end, tickers, secs):
     # Set start and end
     start = dt.datetime.strptime(start,'%Y/%m/%d')
     end = dt.datetime.strptime(end,'%Y/%m/%d')
@@ -267,7 +277,7 @@ def plot_data(start,end, tickers):
     df = reorder_cols(df,sort_order)
 
     # Get legend
-    leg = create_legend(list(df),last_values,factors)
+    leg = create_legend(list(df),last_values,factors,secs)
 
     # Register plotting converter
     pd.plotting.register_matplotlib_converters()
@@ -301,29 +311,33 @@ def plot_data(start,end, tickers):
     plt.show()
 
 if __name__ == "__main__":
+
+    # Initialize securities object
+    secs = Securities()
+
     args = parse_args()
 
     if args.func == 'plot':
         if not args.tickers:
-            tickers = get_tickers()
+            tickers = secs.get_all_tickers()
         else:
             tickers = args.tickers
-        plot_data(start = args.start, end = args.end, tickers=tickers)
+        plot_data(start = args.start, end = args.end, tickers=tickers, secs=secs)
     if args.func == 'update':
         if not args.tickers:
-            tickers = get_tickers()
+            tickers = secs.get_all_tickers()
         else:
             tickers = args.tickers
         update_data(tickers = tickers)
     if args.func == 'download':
         if not args.tickers:
-            tickers = get_tickers()
+            tickers = secs.get_all_tickers()
         else:
             tickers = args.tickers
         download_data(start = args.start, end = args.end, tickers = tickers, force = args.force)
     if args.func == 'output':
         if not args.tickers:
-            tickers = get_tickers()
+            tickers = secs.get_all_tickers()
         else:
             tickers = args.tickers
         if not args.resample_string:
