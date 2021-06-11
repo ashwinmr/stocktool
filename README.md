@@ -6,10 +6,14 @@ A tool for analyzing stock
 -   Plot stock gain for time period
 -   Output resampled stock data
 
-## Running
+![Screenshot](./screenshots/sc1.png)
+
+## Gettin Started
 
 ```
-python main.py
+pip install -r requirements.txt
+python main.py download
+python main.py plot
 ```
 
 # Usage
@@ -27,6 +31,15 @@ You can use the following flags:
 -   -s: start date in the format (yyyy/mm/dd)
 -   -e: end date in the format (yyyy/mm/dd)
 -   -t: list of tickers
+-   -g: group
+
+Example:
+
+```
+python main.py plot -g crypto
+```
+
+![Screenshot](./screenshots/sc1.png)
 
 ## Downlaod stock data
 
