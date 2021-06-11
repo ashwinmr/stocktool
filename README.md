@@ -8,7 +8,7 @@ A tool for analyzing stock
 
 ![Screenshot](./screenshots/sc1.png)
 
-## Gettin Started
+## Getting Started
 
 ```
 pip install -r requirements.txt
@@ -41,7 +41,7 @@ python main.py plot -g crypto
 
 ![Screenshot](./screenshots/sc1.png)
 
-## Downlaod stock data
+## Download stock data
 
 It will use the tickers specified in the `ticker_data.csv` file to downlaod stock data
 
