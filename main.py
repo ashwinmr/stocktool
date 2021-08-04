@@ -168,6 +168,10 @@ class Securities:
         """
         df = self.process_ticker_data(
             start=start, end=end, tickers=tickers, resample_string=resample_string)
+
+        # Output to temp csv
+        temp_csv_path = os.path.join(get_temp_dir(),'js_output.csv')
+        df.to_csv(temp_csv_path)
         print(df.to_csv())
 
     def plot_data(self, start, end, tickers):
@@ -239,6 +243,13 @@ class Securities:
 
         plt.show()
 
+def get_temp_dir():
+    # Get 
+    program_dir = os.path.dirname(os.path.realpath(__file__))
+    temp_dir = os.path.join(program_dir,'temp')
+    if not os.path.isdir(temp_dir):
+        os.makedirs(temp_dir)
+    return temp_dir
 
 def normalize(df_in):
 
